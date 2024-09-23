@@ -1,0 +1,8 @@
+flask==3.0.3                   # Framework web
+pandas==2.2.2                  # Manipulação e análise de dados
+statsmodels==0.14.2            # Modelagem estatística, necessário para SARIMAX
+scikit-optimize==0.10.2        # Otimização bayesiana
+numpy==1.26.4                  # Biblioteca de álgebra linear
+scikit-learn==1.5.1            # Algoritmos de machine learning
+gunicorn==23.0.0               # Servidor WSGI para rodar a aplicação Flask em produção
+Flask-WTF==1.2.1               # Para autentificação
