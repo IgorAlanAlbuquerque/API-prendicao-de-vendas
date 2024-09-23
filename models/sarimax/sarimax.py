@@ -1,7 +1,7 @@
 from pandas import DataFrame, concat
 from .train_model import treinar_modelo
-from .desagregar import desagregar_previsao
-from .agregar import agregar, estimar_desconto_loja
+from .desagregar import desagregar_bayse
+from .agregar import agregar, estimar_desconto_bayse
 from .utils import separar_ciclos, indexar_loja
 
 def sarimax(df, promocao_futura):
@@ -14,20 +14,19 @@ def sarimax(df, promocao_futura):
     lojas = df['cod_loja'].unique()
     
     #json de previsao por loja
-    previsao_json = {
-        'lojas': []
-    }
+    previsao_json = []
     for loja in lojas:
         #agreagar a loja
         vendas_agregadas = agregar(df[df['cod_loja']==loja])
-        estimado = estimar_desconto_loja(df[df['cod_loja']==loja], promocao_futura[promocao_futura['cod_loja']==loja])
+        estimado = estimar_desconto_bayse(df[df['cod_loja']==loja],
+                                          promocao_futura[promocao_futura['cod_loja']==loja])
         #indexar dados
         loja_final = indexar_loja(vendas_agregadas)
         #separar em treino e validacao
         train = loja_final[loja_final['ano_ciclo'] <= ano_treino*100+ciclo_treino]
         test = loja_final[loja_final['ano_ciclo'] > ano_treino*100+ciclo_treino]
         #treinar o modelo com os melhores parametros
-        result = treinar_modelo(train, test, loja_final, estimado, num_pred)
+        result = treinar_modelo(train, test, estimado, num_pred)
         
         #json da loja
         json_loja = {
@@ -37,7 +36,7 @@ def sarimax(df, promocao_futura):
         #se result esta vazio quer dizer que deu erro na previsao. Colocar erro no campo dessa loja
         if result is None or result.empty:
             json_loja['produtos'] = "erro"
-            previsao_json['lojas'].append(json_loja)
+            previsao_json.append(json_loja)
             continue
         
         resultl = result.tolist()
@@ -53,11 +52,13 @@ def sarimax(df, promocao_futura):
         
         ciclos_previstos = list(range(ano_final*100+ciclo_final+1, ano_final*100+ciclo_final+num_pred+1))
         for i, ciclo in enumerate(ciclos_previstos):
-            ciclo_desagregado = desagregar_previsao(df[df['cod_loja'] == loja], vendas_agregadas, produtos, ciclo, resultl[i])
+            ciclo_desagregado = desagregar_bayse(df[df['cod_loja'] == loja], vendas_agregadas, produtos, ciclo,
+                                                 resultl[i])
             #adicionar o ciclo previsto ao final do historico para ser usado na desagregação do proximo ciclos
             for j, pre in enumerate(ciclo_desagregado):
                 # Adiciona a previsão para o produto correspondente
                 json_loja['produtos'][j]['previsoes'].append({
+                    'ciclo':ciclo,
                     'previsao': pre
                 })
                 
@@ -65,12 +66,14 @@ def sarimax(df, promocao_futura):
             vendas_agregadas_linha = DataFrame({
                 'ano_ciclo': [ciclo],
                 'num_vendas': [resultl[i]],
-                'descontoMedio_ponderado': [estimado.loc[estimado['ano_ciclo'] == ciclo, 'descontoMedio_ponderado'].values[0]]
+                'descontoMedio_ponderado': [estimado.loc[estimado['ano_ciclo'] == ciclo,
+                                                         'descontoMedio_ponderado'].values[0]]
             })
             vendas_agregadas = concat([vendas_agregadas, vendas_agregadas_linha], axis=0, ignore_index=True)
             
             # Adiciona novos produtos ao histórico
-            desconto_medio_values = promocao_futura[promocao_futura['cod_loja'] == loja]['desconto'].values[:len(produtos)]
+            desconto_medio_values = promocao_futura[promocao_futura['cod_loja'] ==
+                                                    loja]['desconto'].values[:len(produtos)]
             nova_linha = DataFrame({
                 'cod_loja': [loja] * len(produtos),  # Usar diretamente o valor de 'loja'
                 'cod_produto': produtos,
@@ -82,6 +85,6 @@ def sarimax(df, promocao_futura):
             df = concat([df, nova_linha], axis=0, ignore_index=True)
 
         #adiciona a loja as previsões
-        previsao_json['lojas'].append(json_loja)
+        previsao_json.append(json_loja)
         
     return previsao_json

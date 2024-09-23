@@ -38,7 +38,7 @@ def sarima_bayse(treino, exo, t_exo, teste, n_p):
     result = gp_minimize(
         objective,
         parametros,
-        n_calls=100,           # Número de avaliações do modelo 100
+        n_calls=75,           # Número de avaliações do modelo 100
         n_random_starts=15,   # Avaliações aleatórias antes da otimização bayesiana 15
         random_state=42        # Seed para reprodutibilidade
     )

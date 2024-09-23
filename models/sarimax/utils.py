@@ -1,12 +1,15 @@
 from pandas import to_datetime, date_range
-from os import path
+import os
+import sys
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from numpy import mean, array
+from numpy import abs as npabs
 
 def load_data_ciclos():
     # Obter o diretório atual deste arquivo Python
-    current_dir = path.dirname(path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     # Construir o caminho completo para o arquivo de dados
-    file_path = path.join(current_dir, 'datas_inicio_ciclos.txt')
+    file_path = os.path.join(current_dir, 'datas_inicio_ciclos.txt')
     with open(file_path, 'r') as file:
         data = file.read()
     # Converter a string em uma lista e depois em datetime
@@ -48,4 +51,21 @@ def metrica(teste, result):
   alpha = 0.2
   beta = 0.5
   gamma = 0.3
-  return alpha*mean_absolute_percentage_error(teste, result)+beta*mean_squared_error(teste, result)+gamma*mean_absolute_error(teste, result)
+  return alpha*mean_absolute_percentage_error(teste,
+                                              result)+beta*mean_squared_error(teste,
+                                                                        result)+gamma*mean_absolute_error(teste,
+                                                                            result)
+
+def calcular_erro(previsao, real):
+    return mean(npabs(array(previsao) - array(real)))
+
+class SuppressPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout  # Salva o stdout original
+        sys.stdout = open(os.devnull, 'w')  # Redireciona para o null
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout  # Restaura o stdout original
+        
+def metrica_erro_absoluto(desconto_esperado, desconto_calculado):
+    return mean_absolute_error(desconto_esperado, desconto_calculado)

@@ -1,3 +1,4 @@
+python==3.10                   # versao do python usada para desenvolver a api
 flask==3.0.3                   # Framework web
 pandas==2.2.2                  # Manipulação e análise de dados
 statsmodels==0.14.2            # Modelagem estatística, necessário para SARIMAX

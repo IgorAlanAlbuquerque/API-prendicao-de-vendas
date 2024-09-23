@@ -5,9 +5,8 @@ def exponencial(df, promocao_futura, periodo, peso_a, peso_b):
     # Ordenar os dados por ano_ciclo
     df = df.sort_values(by='ano_ciclo')
     #json de previsao por loja
-    previsao_json = {
-        'lojas': []
-    }
+    lojas = []
+    
     ciclos_prever = len(promocao_futura['ano_ciclo'].unique())
     for loja in df['cod_loja'].unique():
         #json da loja
@@ -32,8 +31,8 @@ def exponencial(df, promocao_futura, periodo, peso_a, peso_b):
         # Encontra o produto correspondente no JSON da loja
             for produto in json_loja['produtos']:
                 if produto['cod_produto'] == pre['cod_produto']:
-                    produto['previsoes'].append(pre['previsao'])
+                    produto['previsoes'].append({'ciclo':pre['ano_ciclo'], 'previsao':pre['previsao']}) 
                     
-        previsao_json['lojas'].append(json_loja)
+        lojas.append(json_loja)
            
-    return previsao_json
+    return lojas
